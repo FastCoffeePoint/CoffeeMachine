@@ -1,0 +1,6 @@
+﻿services:
+  cmb.api:
+    image: cmb.api
+    build:
+      context: .
+      dockerfile: Cmb.Api/Dockerfile
