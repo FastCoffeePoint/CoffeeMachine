@@ -3,6 +3,7 @@ using System;
 using Cmb.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Cmb.Database.Migrations
 {
     [DbContext(typeof(DbCoffeeMachineContext))]
-    partial class DbCoffeeMachineContextModelSnapshot : ModelSnapshot
+    [Migration("20240429210651_AddCoffeeRecipe")]
+    partial class AddCoffeeRecipe
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");

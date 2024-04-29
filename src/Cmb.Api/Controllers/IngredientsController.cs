@@ -2,7 +2,6 @@
 using Cmb.Api.AspNetCore;
 using Cmb.Application;
 using Cmb.Application.Services;
-using Cmb.Database;
 using Cmb.Database.Entities;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,7 +10,7 @@ namespace Cmb.Api.Controllers;
 public class IngredientsController(IngredientsService _ingredientsService) : CoffeePointController
 {
     [HttpPost(DefaultUrl)]
-    public async Task<JsonResult<int, string>> CreateIngredient(CreateIngredientForm form) => 
+    public async Task<JsonResult<Guid, string>> CreateIngredient(CreateIngredientForm form) => 
         await _ingredientsService.Create(form);
     
     [HttpGet(DefaultUrl)]
@@ -19,6 +18,10 @@ public class IngredientsController(IngredientsService _ingredientsService) : Cof
         await _ingredientsService.GetIngredients();
     
     [HttpPost(DefaultUrl)]
-    public async Task<JsonResult<int, string>> DeleteIngredient(int ingredientId) => 
+    public async Task<JsonResult<Guid, string>> DeleteIngredient(Guid ingredientId) => 
         await _ingredientsService.Delete(ingredientId);
+    
+    [HttpPost(DefaultUrl)]
+    public async Task<JsonResult<Guid, string>> ReplenishIngredient(ReplenishIngredientForm form) => 
+        await _ingredientsService.ReplenishIngredient(form);
 }

@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cmb.Application", "Cmb.Appl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cmb.Common", "Cmb.Common\Cmb.Common.csproj", "{E533D1EA-36D7-4F06-88CD-571B8C5F7006}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cmb.Domain", "Cmb.Domain\Cmb.Domain.csproj", "{32801CC5-6DA9-41C0-94C6-305F65698F44}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{E533D1EA-36D7-4F06-88CD-571B8C5F7006}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E533D1EA-36D7-4F06-88CD-571B8C5F7006}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E533D1EA-36D7-4F06-88CD-571B8C5F7006}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32801CC5-6DA9-41C0-94C6-305F65698F44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32801CC5-6DA9-41C0-94C6-305F65698F44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32801CC5-6DA9-41C0-94C6-305F65698F44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32801CC5-6DA9-41C0-94C6-305F65698F44}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
