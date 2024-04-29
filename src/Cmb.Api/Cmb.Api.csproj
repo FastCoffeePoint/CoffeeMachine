@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="CSharpFunctionalExtensions" Version="2.41.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0"/>
     </ItemGroup>
@@ -19,6 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Cmb.Application\Cmb.Application.csproj" />
       <ProjectReference Include="..\Cmb.Database\Cmb.Database.csproj" />
     </ItemGroup>
 
