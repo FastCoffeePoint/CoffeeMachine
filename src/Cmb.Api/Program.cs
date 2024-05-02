@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Services
 builder.Services.AddScoped<IngredientsService>();
+builder.Services.AddScoped<CoffeeRecipeService>();
 
 builder.Services.AddDbContext<DbCoffeeMachineContext>(u => 
     u.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));

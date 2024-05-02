@@ -2,7 +2,7 @@
 using Cmb.Api.AspNetCore;
 using Cmb.Application;
 using Cmb.Application.Services;
-using Cmb.Database.Entities;
+using Cmb.Domain;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cmb.Api.Controllers;
@@ -14,7 +14,7 @@ public class IngredientsController(IngredientsService _ingredientsService) : Cof
         await _ingredientsService.Create(form);
     
     [HttpGet(DefaultUrl)]
-    public async Task<ImmutableList<DbIngredient>> GetIngredients() => 
+    public async Task<ImmutableList<Ingredient>> GetIngredients() => 
         await _ingredientsService.GetIngredients();
     
     [HttpPost(DefaultUrl)]

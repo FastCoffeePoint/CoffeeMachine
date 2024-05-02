@@ -8,3 +8,5 @@ public record ReplenishIngredientForm(Guid IngredientId, int IncreaseAmount);
 
 // Coffee recipe
 public record CreateCoffeeRecipe(string Name);
+
+public record ManageIngredientInRecipeForm(Guid RecipeId, Guid IngredientId);

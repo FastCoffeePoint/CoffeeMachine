@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using Cmb.Database;
 using Cmb.Database.Entities;
+using Cmb.Domain;
 using CSharpFunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,8 +9,10 @@ namespace Cmb.Application.Services;
 
 public class IngredientsService(DbCoffeeMachineContext _dc)
 {
-    public async Task<ImmutableList<DbIngredient>> GetIngredients() =>
-        (await _dc.Ingredients.ExcludeDeleted().AsNoTracking().ToListAsync()).ToImmutableList();
+    public async Task<ImmutableList<Ingredient>> GetIngredients() => await _dc.Ingredients.ExcludeDeleted()
+        .AsNoTracking()
+        .Select(u => new Ingredient(u.Id, u.Name, u.Amount))
+        .ToImmutableListAsync();
 
     public async Task<Result<Guid, string>> Create(CreateIngredientForm form)
     {

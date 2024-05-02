@@ -39,12 +39,3 @@ public class DbCoffeeMachineContext(DbContextOptions<DbCoffeeMachineContext> opt
         }
     }
 }
-
-public class DbCoffeeRecipeIngredient
-{
-    public DbCoffeeRecipe CoffeeRecipe { get; set; }
-    public Guid CoffeeRecipeId { get; set; }
-    
-    public DbIngredient Ingredient { get; set; }
-    public Guid IngredientId { get; set; }
-}

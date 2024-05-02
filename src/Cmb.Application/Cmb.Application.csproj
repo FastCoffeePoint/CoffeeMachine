@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Cmb.Database\Cmb.Database.csproj" />
+      <ProjectReference Include="..\Cmb.Domain\Cmb.Domain.csproj" />
     </ItemGroup>
 
     <ItemGroup>
