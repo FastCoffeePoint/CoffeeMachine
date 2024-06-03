@@ -29,6 +29,8 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
             BootstrapServers = consumerConfiguration.BootstrapServers,
             GroupId = consumerConfiguration.GroupId,
             AutoOffsetReset = AutoOffsetReset.Latest,
+            EnableAutoCommit = false,
+            EnableAutoOffsetStore = false,
         };
         
         _consumer = new ConsumerBuilder<Null, TEvent>(consumerConfig)
@@ -69,7 +71,10 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
                 if (handler == null)
                     throw new Exception($"Event handler for {typeof(TEvent)} wasn't registered");
 
-                await handler.Handle(appEvent);
+                var shouldCommit = await handler.Handle(appEvent);
+
+                if(shouldCommit)
+                    _consumer.Commit();
             }
             catch (Exception e)
             {

@@ -1,6 +1,13 @@
-﻿namespace Cmb.Application;
+﻿using Cmb.Domain;
+using CSharpFunctionalExtensions;
+using Microsoft.Extensions.Options;
 
-public class OrderExecutionProcess
+namespace Cmb.Application;
+
+public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> configuration)
 {
-    
+    public async Task<Result<bool>> Execute(CoffeeWasOrderedEvent form)
+    {
+        return Result.Success(true);
+    }
 }
