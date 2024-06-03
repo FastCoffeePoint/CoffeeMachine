@@ -8,6 +8,10 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> c
 {
     public async Task<Result<bool>> Execute(CoffeeWasOrderedEvent form)
     {
+        // get info about ingredient amounts, validate
+        
+        
+        
         return Result.Success(true);
     }
 }

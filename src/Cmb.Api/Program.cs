@@ -1,4 +1,6 @@
 using Cmb.Application;
+using Cmb.Application.Sensors;
+using Cmb.Application.Sensors.Fakes;
 using Cmb.Application.Services;
 using Cmb.Common;
 using Cmb.Common.Kafka;
@@ -16,6 +18,10 @@ builder.Services.AddConsumer<CoffeeWasOrderedEvent, CoffeeWasOrderedEventHandler
 // Services
 builder.Services.AddScoped<IngredientsService>();
 builder.Services.AddScoped<CoffeeRecipeService>();
+
+builder.Services.AddSingleton<ICoffeePresenceChecker, FakeCoffeePresenceChecker>();
+builder.Services.AddSingleton<IIngredientSensor, FakeIngredientSensor>();
+builder.Services.AddSingleton<IRecipeSensor, FakeRecipeSensor>();
 builder.Services.AddSingleton<OrderExecutionProcess>();
 
 // Options 
