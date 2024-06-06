@@ -1,8 +1,10 @@
-﻿namespace Cmb.Application.Sensors.Fakes;
+﻿using CSharpFunctionalExtensions;
 
-public class FakeIngredientSensor : IIngredientSensor
+namespace Cmb.Application.Sensors.Fakes;
+
+public class FakeIngredientsSensor : IIngredientsSensor
 {
-    public async Task<int> GetAmount(string sensorId)
+    public async Task<Result<int>> GetAmount(string sensorId)
     {
         return 0;
     }

@@ -1,6 +1,6 @@
 ﻿namespace Cmb.Application.Sensors;
 
-public interface IRecipeSensor
+public interface IRecipesSensor
 {
     Task StartCooking(string sensorId);
 }

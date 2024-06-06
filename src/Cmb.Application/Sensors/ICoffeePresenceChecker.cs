@@ -2,5 +2,5 @@
 
 public interface ICoffeePresenceChecker
 {
-    bool Check();
+    Task<bool> Check();
 }

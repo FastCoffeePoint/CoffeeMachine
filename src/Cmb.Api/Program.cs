@@ -14,14 +14,18 @@ var builder = WebApplication.CreateBuilder(args);
 var kafkaOptions = GetConfigurationOnRun<KafkaOptions>();
 builder.Services.AddKafka();
 builder.Services.AddConsumer<CoffeeWasOrderedEvent, CoffeeWasOrderedEventHandler>(kafkaOptions);
+builder.Services.AddProducer<CoffeeStartedBrewingEvent>(kafkaOptions);
+builder.Services.AddProducer<CoffeeIsReadyToBeGottenEvent>(kafkaOptions);
+builder.Services.AddProducer<OrderHasBeenCompletedEvent>(kafkaOptions);
+builder.Services.AddProducer<OrderHasBeenFailedEvent>(kafkaOptions);
 
 // Services
 builder.Services.AddScoped<IngredientsService>();
 builder.Services.AddScoped<CoffeeRecipeService>();
 
 builder.Services.AddSingleton<ICoffeePresenceChecker, FakeCoffeePresenceChecker>();
-builder.Services.AddSingleton<IIngredientSensor, FakeIngredientSensor>();
-builder.Services.AddSingleton<IRecipeSensor, FakeRecipeSensor>();
+builder.Services.AddSingleton<IIngredientsSensor, FakeIngredientsSensor>();
+builder.Services.AddSingleton<IRecipesSensor, FakeRecipesSensor>();
 builder.Services.AddSingleton<OrderExecutionProcess>();
 
 // Options 

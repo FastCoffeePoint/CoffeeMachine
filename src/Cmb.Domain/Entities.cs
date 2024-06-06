@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using Cmb.Common;
 using Cmb.Common.Kafka;
 
 namespace Cmb.Domain;
@@ -16,7 +15,7 @@ public record CoffeeWasOrderedEvent(Guid OrderId, Guid RecipeId): IEvent
 {
     public static string Name => "CoffeeWasOrderedEvent";
 }
-public record CoffeeStartedBrewingEvent(Guid OrderId): IEvent
+public record CoffeeStartedBrewingEvent(Guid OrderId, Guid MachineId): IEvent
 {
     public static string Name => "CoffeeStartedBrewingEvent";
 }
@@ -27,6 +26,10 @@ public record CoffeeIsReadyToBeGottenEvent(Guid MachineId, Guid OrderId, Immutab
 public record OrderHasBeenCompletedEvent(Guid OrderId): IEvent
 {
     public static string Name => "OrderHasBeenCompletedEvent";
+}
+public record OrderHasBeenFailedEvent(Guid OrderId, Guid ErrorCode): IEvent
+{
+    public static string Name => "OrderHasBeenFailedEvent";
 }
 
 // Coffee machine

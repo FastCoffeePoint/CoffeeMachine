@@ -2,7 +2,7 @@
 
 public class FakeCoffeePresenceChecker : ICoffeePresenceChecker
 {
-    public bool Check()
+    public async Task<bool> Check()
     {
         return true;
     }
