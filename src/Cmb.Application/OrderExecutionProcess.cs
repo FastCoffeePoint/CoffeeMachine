@@ -1,4 +1,5 @@
-﻿using Cmb.Application.Sensors;
+﻿using System.Collections.Immutable;
+using Cmb.Application.Sensors;
 using Cmb.Common.Kafka;
 using Cmb.Domain;
 using CSharpFunctionalExtensions;
@@ -13,34 +14,56 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
     IRecipesSensor _recipesSensor,
     IKafkaProducer _kafkaProducer)
 {
-    public async Task<Result<bool>> Execute(CoffeeWasOrderedEvent form)
+    public async Task<(Result Result, bool ShouldCommit)> Execute(CoffeeWasOrderedEvent form)
     {
         //TODO: check a coffee presence
-        
-        var ingredients = _configuration.CurrentValue.Ingredients;
-        var amountTasksBeforeExecution = ingredients.Select(async u => (u.IngredientId, Amount: await _ingredientsSensor.GetAmount(u.SensorId)));
-        var amountResultsBeforeExecution = await Task.WhenAll(amountTasksBeforeExecution);
-        if (amountResultsBeforeExecution.Any(u => u.Amount.IsFailure))
-            return await AmountCountingError(amountResultsBeforeExecution, form, false);
-                
-        //TODO: Deciding to commit an event or not, but where can I get ingredients?   
+
+        var ingredientsBeforeExecution = await CountIngredient(form);
+        if (ingredientsBeforeExecution.IsFailure)
+            return (ingredientsBeforeExecution, false);
+
+        var canOrderBeExecuted = CanOrderBeExecuted(form.Ingredients, ingredientsBeforeExecution.Value);
+        if(!canOrderBeExecuted)
+            return (Result.Success(), false);
         
         var recipeSensor = _configuration.CurrentValue.Recipes.FirstOrDefault(u => u.RecipeId == form.RecipeId);
         if (recipeSensor == null)
-            return await RecipeIsNotFoundError(form);
+            return (await RecipeIsNotFoundError(form), false);
             
         await _kafkaProducer.Push(new CoffeeStartedBrewingEvent(form.OrderId, _configuration.CurrentValue.MachineId));
         await _recipesSensor.StartCooking(recipeSensor.SensorId);
         
-        var amountTasksAfterExecution = ingredients.Select(async u => (u.IngredientId, Amount: await _ingredientsSensor.GetAmount(u.SensorId)));
-        var amountResultsAfterExecution = await Task.WhenAll(amountTasksAfterExecution);
-        if (amountResultsAfterExecution.Any(u => u.Amount.IsFailure))
-            return await AmountCountingError(amountResultsAfterExecution, form, true);
+        var ingredientsAfterExecution = await CountIngredient(form);
+        if (ingredientsAfterExecution.IsFailure)
+            return (ingredientsAfterExecution, true);
 
         var isCoffeeTaken = await WaitUntilCoffeeWillBeTaken(5); //TODO: move 5 to config
-        //TODO: probably alert? Or infinite waiting?
+        //TODO: if a coffee wasn't taken probably alert? Or infinite waiting?
         
-        return Result.Success(true);
+        return (Result.Success(), true);
+    }
+
+    private bool CanOrderBeExecuted(ImmutableList<OrderedCoffeeIngredientForm> orderIngredients, ImmutableList<CoffeeMachineIngredient> machineIngredients)
+    {
+        var errorCode = Guid.NewGuid();
+        var machineId = _configuration.CurrentValue.MachineId;
+        var canOrderBeExecuted = true;
+        
+        foreach (var orderIngredient in orderIngredients)
+        {
+            var machineIngredient = machineIngredients.FirstOrDefault(u => orderIngredient.Id == u.Id);
+            if (machineIngredient == null)
+            {
+                Log.Error("COFFEE MACHINE ERROR({0}): An ingredient {1} can't be found, the error code - {2}",
+                    machineId, orderIngredient.Id, errorCode);
+                continue;
+            }
+
+            if (orderIngredient.Amount > machineIngredient.Amount)
+                canOrderBeExecuted = false;
+        }
+
+        return canOrderBeExecuted;
     }
 
     private async Task<bool> WaitUntilCoffeeWillBeTaken(int waitingMinutes)
@@ -74,7 +97,22 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
         return false;
     }
 
-    private async Task<Result<bool>> AmountCountingError((Guid IngredientId, Result<int> Amount)[] results, CoffeeWasOrderedEvent form, bool shouldCommit)
+    private async Task<Result<ImmutableList<CoffeeMachineIngredient>>> CountIngredient(CoffeeWasOrderedEvent form)
+    {
+        var ingredients = _configuration.CurrentValue.Ingredients;
+        var amountTasksBeforeExecution = ingredients.Select(async u => (u.IngredientId, Amount: await _ingredientsSensor.GetAmount(u.SensorId)));
+        var amountResultsBeforeExecution = await Task.WhenAll(amountTasksBeforeExecution);
+        if (amountResultsBeforeExecution.Any(u => u.Amount.IsFailure))
+        {
+            var errorCode = await AmountCountingError(amountResultsBeforeExecution, form);
+            return Result.Failure<ImmutableList<CoffeeMachineIngredient>>($"Can't calculate ingredients in a machine: error code - {errorCode}");
+        }
+
+        return amountResultsBeforeExecution.Select(u => new CoffeeMachineIngredient(u.IngredientId, u.Amount.Value))
+            .ToImmutableList();
+    }
+
+    private async Task<Guid> AmountCountingError((Guid IngredientId, Result<int> Amount)[] results, CoffeeWasOrderedEvent form)
     {
         var errorCode = Guid.NewGuid();
         var machineId = _configuration.CurrentValue.MachineId;
@@ -86,7 +124,6 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
         }
 
         await _kafkaProducer.Push(new OrderHasBeenFailedEvent(form.OrderId, errorCode));
-
-        return shouldCommit;
+        return errorCode;
     }
 }

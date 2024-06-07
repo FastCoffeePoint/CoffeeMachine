@@ -7,12 +7,11 @@ public class CoffeeWasOrderedEventHandler(OrderExecutionProcess orderExecutionPr
 {
     public override async Task<bool> Handle(CoffeeWasOrderedEvent form)
     {
-        var result = await orderExecutionProcess.Execute(form);
-        if(result.IsSuccess)
-            return true;
+        var (result, shouldCommit) = await orderExecutionProcess.Execute(form);
         
-        LogHandlerError(form, result.Error);
+        if(result.IsFailure)
+            LogHandlerError(form, result.Error);
 
-        return result.Value;
+        return shouldCommit;
     }
 }

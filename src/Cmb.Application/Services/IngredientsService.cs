@@ -9,11 +9,7 @@ namespace Cmb.Application.Services;
 
 public class IngredientsService(DbCoffeeMachineContext _dc)
 {
-    public async Task<ImmutableList<Ingredient>> GetIngredients() => await _dc.Ingredients.ExcludeDeleted()
-        .AsNoTracking()
-        .Select(u => new Ingredient(u.Id, u.Name, u.Amount))
-        .ToImmutableListAsync();
-
+    
     public async Task<Result<Guid, string>> Create(CreateIngredientForm form)
     {
         if (string.IsNullOrEmpty(form.Name) && form.Name.Length > 3)

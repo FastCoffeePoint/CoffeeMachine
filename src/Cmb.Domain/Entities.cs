@@ -7,11 +7,11 @@ public record CoffeeRecipe(Guid Id, string Name, ImmutableList<CoffeeRecipeIngre
 
 public record CoffeeRecipeIngredient(Guid Id, string Name);
 
-public record Ingredient(Guid Id, string Name, int Amount);
+public record CoffeeMachineIngredient(Guid Id, int Amount);
 
 // Orders
-public record CoffeeMachineIngredientForm(Guid Id, int AmountBeforeExecution, int AmountAfterExecution);
-public record CoffeeWasOrderedEvent(Guid OrderId, Guid RecipeId): IEvent
+public record OrderedCoffeeIngredientForm(Guid Id, int Amount);
+public record CoffeeWasOrderedEvent(Guid OrderId, Guid RecipeId, ImmutableList<OrderedCoffeeIngredientForm> Ingredients): IEvent
 {
     public static string Name => "CoffeeWasOrderedEvent";
 }
@@ -19,7 +19,8 @@ public record CoffeeStartedBrewingEvent(Guid OrderId, Guid MachineId): IEvent
 {
     public static string Name => "CoffeeStartedBrewingEvent";
 }
-public record CoffeeIsReadyToBeGottenEvent(Guid MachineId, Guid OrderId, ImmutableList<CoffeeMachineIngredientForm> Ingredients): IEvent
+public record ExecutedCoffeeIngredientForm(Guid Id, int AmountBeforeExecution, int AmountAfterExecution);
+public record CoffeeIsReadyToBeGottenEvent(Guid MachineId, Guid OrderId, ImmutableList<ExecutedCoffeeIngredientForm> Ingredients): IEvent
 {
     public static string Name => "CoffeeIsReadyToBeGottenEvent";
 }
