@@ -44,7 +44,7 @@ var app = builder.Build();
 
 var ingredientsService = app.Services.GetRequiredService<IngredientsService>();
 var config = app.Services.GetRequiredService<IOptionsMonitor<CoffeeMachineConfiguration>>();
-await ingredientsService.Initiate(config.CurrentValue.Ingredients.Select(u => u.IngredientId).ToImmutableList());
+await ingredientsService.Initiate(config.CurrentValue.Ingredients.Select(u => (u.IngredientId, u.SensorId)).ToImmutableList());
 
 app.UseSwagger();
 app.UseSwaggerUI();

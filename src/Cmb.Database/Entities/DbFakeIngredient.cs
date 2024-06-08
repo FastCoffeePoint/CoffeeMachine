@@ -7,5 +7,7 @@ public class DbFakeIngredient
     [Key]
     public Guid Id { get; set; }
 
+    public string SensorId { get; set; }
+
     public int Amount { get; set; }
 }

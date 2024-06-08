@@ -112,7 +112,7 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
             .ToImmutableList();
     }
 
-    private async Task<Guid> AmountCountingError((Guid IngredientId, Result<int> Amount)[] results, CoffeeWasOrderedEvent form)
+    private async Task<Guid> AmountCountingError((Guid IngredientId, Result<int, string> Amount)[] results, CoffeeWasOrderedEvent form)
     {
         var errorCode = Guid.NewGuid();
         var machineId = _configuration.CurrentValue.MachineId;

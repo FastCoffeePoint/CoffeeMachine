@@ -4,5 +4,5 @@ namespace Cmb.Application.Sensors;
 
 public interface IIngredientsSensor
 {
-    Task<Result<int>> GetAmount(string sensorId);
+    Task<Result<int, string>> GetAmount(string sensorId);
 }

@@ -9,11 +9,12 @@ namespace Cmb.Application.Services;
 
 public class IngredientsService(DbCoffeeMachineContext _dc)
 {
-    public async Task Initiate(ImmutableList<Guid> ingredientIds)
+    public async Task Initiate(ImmutableList<(Guid IngredientId, string SensorId)> ingredientIds)
     {
         var ingredients = ingredientIds.Select(u => new DbFakeIngredient
         {
-            Id = u,
+            Id = u.IngredientId,
+            SensorId = u.SensorId,
             Amount = 0
         });
 
@@ -34,6 +35,15 @@ public class IngredientsService(DbCoffeeMachineContext _dc)
         await _dc.SaveChangesAsync();
 
         return ingredient.Id;
+    }
+
+    public async Task<Result<int, string>> GetAmount(string sensorId)
+    {
+        var ingredient = await _dc.Ingredients.FirstOrDefaultAsync(u => u.SensorId == sensorId);
+        if (ingredient == null)
+            return $"An ingredient for sensor {sensorId} is not found";
+
+        return ingredient.Amount;
     }
 
     public async Task<ImmutableList<CoffeeMachineIngredient>> GetIngredients() =>
