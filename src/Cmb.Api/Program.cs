@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Cmb.Application;
 using Cmb.Application.Sensors;
 using Cmb.Application.Sensors.Fakes;
@@ -7,6 +8,7 @@ using Cmb.Common.Kafka;
 using Cmb.Database;
 using Cmb.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +23,6 @@ builder.Services.AddProducer<OrderHasBeenFailedEvent>(kafkaOptions);
 
 // Services
 builder.Services.AddScoped<IngredientsService>();
-builder.Services.AddScoped<CoffeeRecipeService>();
 
 builder.Services.AddSingleton<ICoffeePresenceChecker, FakeCoffeePresenceChecker>();
 builder.Services.AddSingleton<IIngredientsSensor, FakeIngredientsSensor>();
@@ -33,13 +34,17 @@ builder.Services.Configure<CoffeeMachineConfiguration>(builder.Configuration);
 builder.Services.Configure<KafkaOptions>(builder.Configuration.GetSection(KafkaOptions.Name));
 
 builder.Services.AddDbContext<DbCoffeeMachineContext>(u => 
-    u.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    u.UseInMemoryDatabase(DbCoffeeMachineContext.DatabaseName));
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+var ingredientsService = app.Services.GetRequiredService<IngredientsService>();
+var config = app.Services.GetRequiredService<IOptionsMonitor<CoffeeMachineConfiguration>>();
+await ingredientsService.Initiate(config.CurrentValue.Ingredients.Select(u => u.IngredientId).ToImmutableList());
 
 app.UseSwagger();
 app.UseSwaggerUI();

@@ -9,43 +9,16 @@ namespace Cmb.Application.Services;
 
 public class IngredientsService(DbCoffeeMachineContext _dc)
 {
-    
-    public async Task<Result<Guid, string>> Create(CreateIngredientForm form)
+    public async Task Initiate(ImmutableList<Guid> ingredientIds)
     {
-        if (string.IsNullOrEmpty(form.Name) && form.Name.Length > 3)
-            return "Invalid name for ingredient";
-        
-        var nameIsBusy = await _dc.Ingredients.ExcludeDeleted().AnyAsync(u => u.Name == form.Name);
-        if (nameIsBusy)
-            return "The ingredient name is busy";
-
-        var ingredient = new DbIngredient
+        var ingredients = ingredientIds.Select(u => new DbFakeIngredient
         {
-            Id = Guid.NewGuid(), 
-            Name = form.Name
-        }.MarkCreated();
-        _dc.Ingredients.Add(ingredient);
+            Id = u,
+            Amount = 0
+        });
+
+        _dc.Ingredients.AddRange(ingredients);
         await _dc.SaveChangesAsync();
-
-        return ingredient.Id;
-    }
-
-    public async Task<Result<Guid, string>> Delete(Guid ingredientId)
-    {
-        var ingredient = await _dc.Ingredients.FirstOrDefaultAsync(u => u.Id == ingredientId);
-        if (ingredient == null)
-            return "A ingredient is not found";
-        if (ingredient.IsDeleted)
-            return ingredientId;
-
-        var anyCoffeeRecipeHasIngredient =  await _dc.CoffeeRecipeIngredients.AnyAsync(u => u.IngredientId == ingredientId);
-        if (anyCoffeeRecipeHasIngredient)
-            return "Any coffee recipe has the ingredient, so that you can't delete this.";
-
-        ingredient.MarkDeleted();
-        await _dc.SaveChangesAsync();
-
-        return ingredientId;
     }
 
     public async Task<Result<Guid, string>> ReplenishIngredient(ReplenishIngredientForm form)
@@ -53,7 +26,7 @@ public class IngredientsService(DbCoffeeMachineContext _dc)
         if (form.IncreaseAmount <= 0)
             return "Amount must be positive";
         
-        var ingredient = await _dc.Ingredients.ExcludeDeleted().FirstOrDefaultAsync(u => u.Id == form.IngredientId);
+        var ingredient = await _dc.Ingredients.FirstOrDefaultAsync(u => u.Id == form.IngredientId);
         if (ingredient == null)
             return "A ingredient is not found";
 
@@ -62,4 +35,7 @@ public class IngredientsService(DbCoffeeMachineContext _dc)
 
         return ingredient.Id;
     }
+
+    public async Task<ImmutableList<CoffeeMachineIngredient>> GetIngredients() =>
+        (await _dc.Ingredients.AsNoTracking().Select(u => new CoffeeMachineIngredient(u.Id, u.Amount)).ToListAsync()).ToImmutableList();
 }

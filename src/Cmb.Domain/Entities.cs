@@ -3,9 +3,10 @@ using Cmb.Common.Kafka;
 
 namespace Cmb.Domain;
 
-public record CoffeeRecipe(Guid Id, string Name, ImmutableList<CoffeeRecipeIngredient> Ingredients);
-
-public record CoffeeRecipeIngredient(Guid Id, string Name);
+// Coffee machine
+public record CoffeeMachineConfiguration(Guid MachineId, ImmutableList<ConfigurationIngredient> Ingredients, ImmutableList<ConfigurationRecipe> Recipes);
+public record ConfigurationIngredient(Guid IngredientId, string SensorId);
+public record ConfigurationRecipe(Guid RecipeId, string SensorId);
 
 public record CoffeeMachineIngredient(Guid Id, int Amount);
 
@@ -33,8 +34,3 @@ public record OrderHasBeenFailedEvent(Guid OrderId, Guid ErrorCode): IEvent
     public static string Name => "OrderHasBeenFailedEvent";
 }
 
-// Coffee machine
-public record CoffeeMachineConfiguration(Guid MachineId, ImmutableList<ConfigurationIngredient> Ingredients, ImmutableList<ConfigurationRecipe> Recipes);
-
-public record ConfigurationIngredient(Guid IngredientId, string SensorId);
-public record ConfigurationRecipe(Guid RecipeId, string SensorId);
