@@ -19,7 +19,7 @@ public class FakeCoffeePresenceChecker : ICoffeePresenceChecker
     
     public async Task<bool> Check()
     {
-        var result = true;
+        bool result;
 
         lock (locker)
         {

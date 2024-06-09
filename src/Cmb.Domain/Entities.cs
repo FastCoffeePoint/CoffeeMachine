@@ -4,7 +4,12 @@ using Cmb.Common.Kafka;
 namespace Cmb.Domain;
 
 // Coffee machine
-public record CoffeeMachineConfiguration(Guid MachineId, ImmutableList<ConfigurationIngredient> Ingredients, ImmutableList<ConfigurationRecipe> Recipes);
+public class CoffeeMachineConfiguration
+{
+    public Guid MachineId { get; init; }
+    public List<ConfigurationIngredient> Ingredients { get; init; }
+    public List<ConfigurationRecipe> Recipes { get; init; }
+}
 public record ConfigurationIngredient(Guid IngredientId, string SensorId);
 public record ConfigurationRecipe(Guid RecipeId, string SensorId);
 

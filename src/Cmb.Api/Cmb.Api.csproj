@@ -10,6 +10,7 @@
     <ItemGroup>
         <PackageReference Include="CSharpFunctionalExtensions" Version="2.41.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
+        <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0"/>
     </ItemGroup>
 

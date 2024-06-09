@@ -9,6 +9,7 @@ using Cmb.Database;
 using Cmb.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,9 +26,9 @@ builder.Services.AddProducer<OrderHasBeenFailedEvent>(kafkaOptions);
 builder.Services.AddScoped<IngredientsService>();
 
 builder.Services.AddSingleton<ICoffeePresenceChecker, FakeCoffeePresenceChecker>();
-builder.Services.AddSingleton<IIngredientsSensor, FakeIngredientsSensor>();
+builder.Services.AddScoped<IIngredientsSensor, FakeIngredientsSensor>();
 builder.Services.AddSingleton<IRecipesSensor, FakeRecipesSensor>();
-builder.Services.AddSingleton<OrderExecutionProcess>();
+builder.Services.AddScoped<OrderExecutionProcess>();
 
 // Options 
 builder.Services.Configure<CoffeeMachineConfiguration>(builder.Configuration);
@@ -40,11 +41,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console()
+    .CreateLogger();
 var app = builder.Build();
 
-var ingredientsService = app.Services.GetRequiredService<IngredientsService>();
-var config = app.Services.GetRequiredService<IOptionsMonitor<CoffeeMachineConfiguration>>();
-await ingredientsService.Initiate(config.CurrentValue.Ingredients.Select(u => (u.IngredientId, u.SensorId)).ToImmutableList());
+if (app.Environment.IsDevelopment())
+    await InitiateTestData();
 
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -60,6 +65,14 @@ app.Run();
 
 
 #region Helpers
+
+async Task InitiateTestData()
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var ingredientsService = scope.ServiceProvider.GetRequiredService<IngredientsService>();
+    var config = scope.ServiceProvider.GetRequiredService<IOptionsMonitor<CoffeeMachineConfiguration>>();
+    await ingredientsService.Initiate(config.CurrentValue.Ingredients.Select(u => (u.IngredientId, u.SensorId)).ToImmutableList());
+}
 
 T GetConfigurationOnRun<T>() where T : IOptions
 {
