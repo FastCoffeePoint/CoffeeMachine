@@ -31,11 +31,15 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
             return (await RecipeIsNotFoundError(form), false);
             
         await _kafkaProducer.Push(new CoffeeStartedBrewingEvent(form.OrderId, _configuration.CurrentValue.MachineId));
-        await _recipesSensor.StartCooking(recipeSensor.SensorId);
+        var cooking = await _recipesSensor.StartCooking(recipeSensor.SensorId, form.Ingredients);
+        if (cooking.IsFailure)
+            return await FailedCookingError(cooking, form);
         
         var ingredientsAfterExecution = await CountIngredient(form);
         if (ingredientsAfterExecution.IsFailure)
-            return (ingredientsAfterExecution, true);
+            return await FailedCountingBeforeExecution(ingredientsBeforeExecution, form);
+
+        await PushCoffeeIsReadyToBeGottenEvent(form, ingredientsBeforeExecution.Value, ingredientsAfterExecution.Value);
 
         var isCoffeeTaken = await WaitUntilCoffeeWillBeTaken(5); //TODO: move 5 to config
         //TODO: if a coffee wasn't taken probably alert? Or infinite waiting?
@@ -43,6 +47,18 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
         return (Result.Success(), true);
     }
 
+    private async Task PushCoffeeIsReadyToBeGottenEvent(CoffeeWasOrderedEvent form, ImmutableList<CoffeeMachineIngredient> ingredientsBeforeExecution, ImmutableList<CoffeeMachineIngredient> ingredientsAfterExecution)
+    {
+        var ingredientCountingById = ingredientsBeforeExecution.Concat(ingredientsAfterExecution)
+            .GroupBy(u => u.Id)
+            .Select(u => (Key: u.Key, Ingredients: u.OrderBy(v => v.CreationTime)));
+
+        foreach (var (ingredientId, ingredients) in ingredientCountingById)
+        {
+            
+        }
+    }
+    
     private bool CanOrderBeExecuted(ImmutableList<OrderedCoffeeIngredientForm> orderIngredients, ImmutableList<CoffeeMachineIngredient> machineIngredients)
     {
         var errorCode = Guid.NewGuid();
@@ -83,19 +99,6 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
 
         return isCoffeeTaken;
     }
-    
-    private async Task<Result<bool>> RecipeIsNotFoundError(CoffeeWasOrderedEvent form)
-    {
-        var errorCode = Guid.NewGuid();
-        var machineId = _configuration.CurrentValue.MachineId;
-        
-        Log.Error("COFFEE MACHINE ERROR({0}): A recipe with id {1} can't be found in the machine configuration, the error code - {2}", 
-            machineId, form.RecipeId, errorCode);
-        
-        await _kafkaProducer.Push(new OrderHasBeenFailedEvent(form.OrderId, errorCode));
-
-        return false;
-    }
 
     private async Task<Result<ImmutableList<CoffeeMachineIngredient>>> CountIngredient(CoffeeWasOrderedEvent form)
     {
@@ -111,6 +114,30 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
         return amountResultsBeforeExecution.Select(u => new CoffeeMachineIngredient(u.IngredientId, u.Amount.Value))
             .ToImmutableList();
     }
+    
+    private async Task<(Result Result, bool ShouldCommit)> FailedCountingBeforeExecution(Result counting, CoffeeWasOrderedEvent form)
+    {
+        var errorCode = Guid.NewGuid();
+        var machineId = _configuration.CurrentValue.MachineId;
+        
+        Log.Error("COFFEE MACHINE ERROR({0}): Failed during counting the ingredients before execution the recipe for the order {1}, the error - {2}, the error code - {3}", 
+            machineId, form.OrderId, counting.Error, errorCode);
+        await _kafkaProducer.Push(new OrderHasBeenFailedEvent(form.OrderId, errorCode));
+
+        return (counting, true);
+    }
+
+    private async Task<(Result Result, bool ShouldCommit)> FailedCookingError(Result cooking, CoffeeWasOrderedEvent form)
+    {
+        var errorCode = Guid.NewGuid();
+        var machineId = _configuration.CurrentValue.MachineId;
+        
+        Log.Error("COFFEE MACHINE ERROR({0}): Failed during cooking the recipe for the order {1}, the error - {2}, the error code - {3}", 
+            machineId, form.OrderId, cooking.Error, errorCode);
+        await _kafkaProducer.Push(new OrderHasBeenFailedEvent(form.OrderId, errorCode));
+
+        return (cooking, true);
+    }
 
     private async Task<Guid> AmountCountingError((Guid IngredientId, Result<int, string> Amount)[] results, CoffeeWasOrderedEvent form)
     {
@@ -125,5 +152,18 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
 
         await _kafkaProducer.Push(new OrderHasBeenFailedEvent(form.OrderId, errorCode));
         return errorCode;
+    }
+    
+    private async Task<Result<bool>> RecipeIsNotFoundError(CoffeeWasOrderedEvent form)
+    {
+        var errorCode = Guid.NewGuid();
+        var machineId = _configuration.CurrentValue.MachineId;
+        
+        Log.Error("COFFEE MACHINE ERROR({0}): A recipe with id {1} can't be found in the machine configuration, the error code - {2}", 
+            machineId, form.RecipeId, errorCode);
+        
+        await _kafkaProducer.Push(new OrderHasBeenFailedEvent(form.OrderId, errorCode));
+
+        return false;
     }
 }

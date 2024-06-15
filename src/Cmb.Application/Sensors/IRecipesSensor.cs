@@ -1,6 +1,10 @@
-﻿namespace Cmb.Application.Sensors;
+﻿using System.Collections.Immutable;
+using Cmb.Domain;
+using CSharpFunctionalExtensions;
+
+namespace Cmb.Application.Sensors;
 
 public interface IRecipesSensor
 {
-    Task StartCooking(string sensorId);
+    Task<Result> StartCooking(string sensorId, ImmutableList<OrderedCoffeeIngredientForm> ingredients);
 }

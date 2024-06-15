@@ -13,6 +13,10 @@ public class IngredientsController(IngredientsService _ingredientsService) : Cof
     public async Task<JsonResult<Guid, string>> ReplenishIngredient(ReplenishIngredientForm form) => 
         await _ingredientsService.ReplenishIngredient(form);
     
+    [HttpPost(DefaultUrl)]
+    public async Task<JsonOptionError> UseIngredient(UseIngredientForm form) => 
+        await _ingredientsService.UseIngredient(form);
+    
     [HttpGet(DefaultUrl)]
     public async Task<ImmutableList<CoffeeMachineIngredient>> GetIngredients() => 
         await _ingredientsService.GetIngredients();

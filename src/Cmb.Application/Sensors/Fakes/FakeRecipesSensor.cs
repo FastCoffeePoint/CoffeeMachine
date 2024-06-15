@@ -1,17 +1,33 @@
-﻿using Cmb.Domain;
+﻿using System.Collections.Immutable;
+using Cmb.Application.Services;
+using Cmb.Domain;
+using CSharpFunctionalExtensions;
 using Microsoft.Extensions.Options;
-using Serilog;
 
 namespace Cmb.Application.Sensors.Fakes;
 
-public class FakeRecipesSensor(IOptionsMonitor<CoffeeMachineConfiguration> config) : IRecipesSensor
+public class FakeRecipesSensor(IOptionsMonitor<CoffeeMachineConfiguration> config, IngredientsService ingredientsService) : IRecipesSensor
 {
     private readonly TimeSpan Delay = new(0, 0, 0, 20);
     
-    public async Task StartCooking(string sensorId)
+    public async Task<Result> StartCooking(string sensorId, ImmutableList<OrderedCoffeeIngredientForm> ingredients)
     {
-        await Task.Delay(Delay);
         if(config.CurrentValue.Recipes.All(u => u.SensorId != sensorId))
-            Log.Warning("COFFEE MACHINE ERROR({0}): can't find a sensor with a id {1}", config.CurrentValue.MachineId, sensorId);
+            return Result.Failure($"COFFEE MACHINE ERROR({config.CurrentValue.MachineId}): can't find a sensor with a id {sensorId}");
+        
+        await Task.Delay(Delay);
+
+
+        var decreasingResults = new List<Result>();
+        foreach (var ingredient in ingredients)
+        {
+            var decreasing = await ingredientsService.UseIngredient(new UseIngredientForm(ingredient.Id, ingredient.Amount));
+            decreasingResults.Add(decreasing);
+        }
+
+        if (decreasingResults.All(u => u.IsSuccess))
+            return Result.Success();
+
+        return Result.Failure(string.Join(", ", decreasingResults.Where(u => u.IsFailure).Select(u => u.Error)));
     }
 }

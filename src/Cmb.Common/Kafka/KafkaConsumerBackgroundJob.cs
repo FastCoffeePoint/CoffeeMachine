@@ -1,12 +1,9 @@
-﻿using Cmb.Common.Kafka;
-using Confluent.Kafka;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
+﻿using Confluent.Kafka;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 using Serilog;
 
-namespace Cpb.Common.Kafka;
+namespace Cmb.Common.Kafka;
 
 public class KafkaConsumerBackgroundJob : BackgroundService
 {

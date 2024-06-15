@@ -1,5 +1,4 @@
-﻿using Cpb.Common.Kafka;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Cmb.Common.Kafka;

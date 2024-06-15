@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Text.Json.Serialization;
 using Cmb.Common.Kafka;
 
 namespace Cmb.Domain;
@@ -13,7 +14,11 @@ public class CoffeeMachineConfiguration
 public record ConfigurationIngredient(Guid IngredientId, string SensorId);
 public record ConfigurationRecipe(Guid RecipeId, string SensorId);
 
-public record CoffeeMachineIngredient(Guid Id, int Amount);
+public record CoffeeMachineIngredient(Guid Id, int Amount)
+{
+    [JsonIgnore]
+    public DateTimeOffset CreationTime { get; } = DateTimeOffset.UtcNow;
+};
 
 // Orders
 public record OrderedCoffeeIngredientForm(Guid Id, int Amount);

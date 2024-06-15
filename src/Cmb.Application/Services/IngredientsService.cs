@@ -36,6 +36,21 @@ public class IngredientsService(DbCoffeeMachineContext _dc)
 
         return ingredient.Id;
     }
+    
+    public async Task<Result> UseIngredient(UseIngredientForm form)
+    {
+        if (form.DecreaseAmount <= 0)
+            return Result.Failure("Amount must be positive");
+        
+        var ingredient = await _dc.Ingredients.FirstOrDefaultAsync(u => u.Id == form.IngredientId);
+        if (ingredient == null)
+            return Result.Failure("A ingredient is not found");
+
+        ingredient.Amount -= form.DecreaseAmount;
+        await _dc.SaveChangesAsync();
+        
+        return Result.Success();
+    }
 
     public async Task<Result<int, string>> GetAmount(string sensorId)
     {
