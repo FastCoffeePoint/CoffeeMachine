@@ -5,7 +5,7 @@ namespace Cmb.Application;
 
 public class CoffeeWasOrderedEventHandler(OrderExecutionProcess orderExecutionProcess) : KafkaEventHandler<CoffeeWasOrderedEvent>
 {
-    public override async Task<bool> Handle(CoffeeWasOrderedEvent form)
+    protected override async Task<bool> Handle(CoffeeWasOrderedEvent form)
     {
         var (result, shouldCommit) = await orderExecutionProcess.Execute(form);
         

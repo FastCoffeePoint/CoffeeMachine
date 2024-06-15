@@ -16,7 +16,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Kafka 
 var kafkaOptions = GetConfigurationOnRun<KafkaOptions>();
 builder.Services.AddKafka();
-builder.Services.AddConsumer<CoffeeWasOrderedEvent, CoffeeWasOrderedEventHandler>(kafkaOptions);
+builder.Services.AddConsumer(kafkaOptions.OrderEventsConsumer)
+    .AddEvent<CoffeeWasOrderedEvent, CoffeeWasOrderedEventHandler>();
 builder.Services.AddProducer<CoffeeStartedBrewingEvent>(kafkaOptions);
 builder.Services.AddProducer<CoffeeIsReadyToBeGottenEvent>(kafkaOptions);
 builder.Services.AddProducer<OrderHasBeenCompletedEvent>(kafkaOptions);
