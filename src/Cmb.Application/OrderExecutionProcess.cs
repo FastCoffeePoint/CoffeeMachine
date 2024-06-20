@@ -49,14 +49,27 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
 
     private async Task PushCoffeeIsReadyToBeGottenEvent(CoffeeWasOrderedEvent form, ImmutableList<CoffeeMachineIngredient> ingredientsBeforeExecution, ImmutableList<CoffeeMachineIngredient> ingredientsAfterExecution)
     {
+        var machineId = _configuration.CurrentValue.MachineId; 
         var ingredientCountingById = ingredientsBeforeExecution.Concat(ingredientsAfterExecution)
             .GroupBy(u => u.Id)
-            .Select(u => (Key: u.Key, Ingredients: u.OrderBy(v => v.CreationTime)));
+            .Select(u => (Key: u.Key, Ingredients: u.OrderBy(v => v.CreationTime).ToArray()));
 
+        var executedCoffeeIngredients = new List<ExecutedCoffeeIngredientForm>();
         foreach (var (ingredientId, ingredients) in ingredientCountingById)
         {
+            if (ingredients.Length != 2)
+            {
+                Log.Error("COFFEE MACHINE ERROR({0}): An ingredient count didn't construct a pair with id {1}", machineId, ingredientId);
+                continue;
+            }
             
+            var beforeExecution = ingredients[0];
+            var afterExecution = ingredients[1];
+            var ingredient = new ExecutedCoffeeIngredientForm(ingredientId, beforeExecution.Amount, afterExecution.Amount);
+            executedCoffeeIngredients.Add(ingredient);
         }
+        
+        await _kafkaProducer.Push(new CoffeeIsReadyToBeGottenEvent(machineId, form.OrderId, executedCoffeeIngredients.ToImmutableList()));
     }
     
     private bool CanOrderBeExecuted(ImmutableList<OrderedCoffeeIngredientForm> orderIngredients, ImmutableList<CoffeeMachineIngredient> machineIngredients)
