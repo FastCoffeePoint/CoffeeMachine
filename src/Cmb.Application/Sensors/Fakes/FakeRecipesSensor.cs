@@ -2,11 +2,12 @@
 using Cmb.Application.Services;
 using Cmb.Domain;
 using CSharpFunctionalExtensions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Cmb.Application.Sensors.Fakes;
 
-public class FakeRecipesSensor(IOptionsMonitor<CoffeeMachineConfiguration> config, IngredientsService ingredientsService) : IRecipesSensor
+public class FakeRecipesSensor(IOptionsMonitor<CoffeeMachineConfiguration> config, IServiceProvider serviceProvider) : IRecipesSensor
 {
     private readonly TimeSpan Delay = new(0, 0, 0, 20);
     
@@ -18,6 +19,9 @@ public class FakeRecipesSensor(IOptionsMonitor<CoffeeMachineConfiguration> confi
         await Task.Delay(Delay);
 
 
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var ingredientsService = scope.ServiceProvider.GetRequiredService<IngredientsService>();
+        
         var decreasingResults = new List<Result>();
         foreach (var ingredient in ingredients)
         {

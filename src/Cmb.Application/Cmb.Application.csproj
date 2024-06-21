@@ -11,9 +11,5 @@
       <ProjectReference Include="..\Cmb.Database\Cmb.Database.csproj" />
       <ProjectReference Include="..\Cmb.Domain\Cmb.Domain.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="CSharpFunctionalExtensions" Version="2.41.0" />
-    </ItemGroup>
-
+    
 </Project>
