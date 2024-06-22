@@ -10,7 +10,7 @@ public interface IKafkaEventHandler
 }
 
 
-public abstract class KafkaEventHandler<T> where T : IEvent
+public abstract class KafkaEventHandler<T> : IKafkaEventHandler where T : IEvent
 {
     public Task<bool> HandleRaw(string form) => Handle(JsonSerializer.Deserialize<T>(form));
 
