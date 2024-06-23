@@ -2,7 +2,7 @@ namespace Cmb.Common.Kafka;
 
 public class ProducerConfiguration
 {
-    public List<Topic> Topics { get; set; }
-    
-    public string BootstrapServers { get; init; }
+    public string Topic { get; set; }
+    public string BootstrapServers { get; set; }
+    public string Audience { get; set; }
 }

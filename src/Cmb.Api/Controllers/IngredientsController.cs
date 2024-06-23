@@ -10,18 +10,14 @@ namespace Cmb.Api.Controllers;
 public class IngredientsController(IngredientsService _ingredientsService) : CoffeePointController
 {
     [HttpPost(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> CreateIngredient(CreateIngredientForm form) => 
-        await _ingredientsService.Create(form);
-    
-    [HttpGet(DefaultUrl)]
-    public async Task<ImmutableList<Ingredient>> GetIngredients() => 
-        await _ingredientsService.GetIngredients();
-    
-    [HttpPost(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> DeleteIngredient(Guid ingredientId) => 
-        await _ingredientsService.Delete(ingredientId);
-    
-    [HttpPost(DefaultUrl)]
     public async Task<JsonResult<Guid, string>> ReplenishIngredient(ReplenishIngredientForm form) => 
         await _ingredientsService.ReplenishIngredient(form);
+    
+    [HttpPost(DefaultUrl)]
+    public async Task<JsonOptionError> UseIngredient(UseIngredientForm form) => 
+        await _ingredientsService.UseIngredient(form);
+    
+    [HttpGet(DefaultUrl)]
+    public async Task<ImmutableList<CoffeeMachineIngredient>> GetIngredients() => 
+        await _ingredientsService.GetIngredients();
 }

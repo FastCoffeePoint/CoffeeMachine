@@ -5,40 +5,25 @@ namespace Cmb.Common.Kafka;
 
 public static class ServicesExtensions
 {
-    public static IServiceCollection AddKafka(this IServiceCollection services)
+    //Don't support multiple topics now
+    public static IServiceCollection AddProducer(this IServiceCollection services, ProducerConfiguration configuration)
     {
-        services.AddScoped<IKafkaProducer, KafkaProducer>();
-
-        return services;
-    }
-
-    public static IServiceCollection AddProducer<TEvent>(this IServiceCollection services, IOptionsMonitor<KafkaOptions> configuration) where TEvent : class, IEvent
-    {
-        var configurationFound = configuration.CurrentValue.Producers
-            .Any(u => u.Topics
-                .Any(v => v.Events
-                    .Any(j => j == TEvent.Name)));
-        if (!configurationFound)
-            throw new Exception($"Any producer configuration wasn't registered with name: {TEvent.Name}");
-        
-        services.AddSingleton<KafkaMessageProducer<TEvent>>();
+        services.AddSingleton<IKafkaProducer, KafkaProducer>(u => new KafkaProducer(configuration));
 
         return services;
     }
     
-    public static IServiceCollection AddConsumer<TEvent, THandler>(this IServiceCollection services, IOptionsMonitor<KafkaOptions> configuration) 
-        where TEvent : class, IEvent
-        where THandler : class, IEventHandler<TEvent>
+    public static IServiceCollection AddConsumer(this IServiceCollection services, ConsumerConfiguration configuration) 
     {
-        var configurationFound = configuration.CurrentValue.Consumers
-            .Any(u => u.Topics
-                .Any(v => v.Events
-                    .Any(j => j == TEvent.Name)));
-        if (!configurationFound)
-            throw new Exception($"Any consumer configuration wasn't registered with name: {TEvent.Name}");
-        
-        services.AddScoped<IEventHandler<TEvent>, THandler>();
-        services.AddHostedService<KafkaConsumerBackgroundJob<TEvent>>();
+        services.AddHostedService<KafkaConsumerBackgroundJob>(u => new KafkaConsumerBackgroundJob(u, configuration));
+        return services;
+    }
+    
+    public static IServiceCollection AddEvent<TEvent, THandler>(this IServiceCollection services)        
+        where TEvent : class, IEvent
+        where THandler : KafkaEventHandler<TEvent>
+    {
+        services.AddKeyedScoped<IKafkaEventHandler, THandler>(TEvent.Name);
         return services;
     }
 }

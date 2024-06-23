@@ -1,78 +1,106 @@
-﻿using Confluent.Kafka;
+﻿using System.Text;
+using Confluent.Kafka;
+using CSharpFunctionalExtensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace Cmb.Common.Kafka;
 
-public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent : class, IEvent
+public class KafkaConsumerBackgroundJob : BackgroundService
 {
-    private readonly IConsumer<Null, TEvent> _consumer;
+    private readonly IConsumer<Ignore, string> _consumer;
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger _logger;
-    private readonly string _topic;
-
-    public KafkaConsumerBackgroundJob(IOptionsMonitor<KafkaOptions> configuration,
-        IServiceProvider serviceProvider, 
-        ILogger logger)
+    private readonly ConsumerConfiguration _configuration;
+    public KafkaConsumerBackgroundJob(IServiceProvider serviceProvider,
+        ConsumerConfiguration configuration)
     {
-        var consumerConfiguration = configuration.CurrentValue.Consumers
-            .FirstOrDefault(u => u.Topics
-                .Any(v => v.Events
-                    .Any(j => j == TEvent.Name)))
-            ?? throw new Exception($"Consumer configuration for the event {TEvent.Name} wasn't registered");
-
-        var topic = consumerConfiguration.Topics.FirstOrDefault(u => u.Events.Any(v => v == TEvent.Name));
-        _topic = topic?.Name  ?? throw new Exception($"Consumer configuration for the event {TEvent.Name} wasn't registered");
-        
         var consumerConfig = new ConsumerConfig
         {
-            BootstrapServers = consumerConfiguration.BootstrapServers,
-            GroupId = consumerConfiguration.GroupId,
+            BootstrapServers = configuration.BootstrapServers,
+            GroupId = configuration.GroupId,
             AutoOffsetReset = AutoOffsetReset.Latest,
+            EnableAutoCommit = false,
         };
-        
-        _consumer = new ConsumerBuilder<Null, TEvent>(consumerConfig)
-                    .SetValueDeserializer(new DefaultJsonDeserializer<TEvent>())
-                    .Build();
-        
+
         _serviceProvider = serviceProvider;
-        _logger = logger;
+        _configuration = configuration;
+        _consumer = new ConsumerBuilder<Ignore, string>(consumerConfig)
+            .SetKeyDeserializer(new DefaultJsonDeserializer<Ignore>())
+            .Build();
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _consumer.Subscribe(_topic);
+        //TODO: looks ugly, but BackgroundService locks the app, because we have _consumer.Consume(...) doesn't hava an async version.
+        // Perhaps I should user Hangfire and this call won't fuck my mind at all.
+        Task.Run(() => Process(stoppingToken), stoppingToken); 
+        return Task.CompletedTask;
+    }
+    
+    private async void Process(CancellationToken stoppingToken)
+    {
+        Log.Information("KAFKA CONSUMER({0}): A consumer for the topic {1} is starting.", _consumer.MemberId, _configuration.Topic);
+        _consumer.Subscribe(_configuration.Topic);
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            ConsumeResult<Null, TEvent> consumeResult = null;
+            var eventName = Maybe<string>.None;
+            ConsumeResult<Ignore, string> consumeResult = null;
             try
             {
+                Log.Information("KAFKA CONSUMER({0}): A consumer for the topic {1} is consuming.",_consumer.MemberId, _configuration.Topic);
                 consumeResult = _consumer.Consume(stoppingToken);
                 
-                var appEvent = consumeResult.Message.Value;
-                if (appEvent == null)
+                var audience = GetValue(consumeResult.Message.Headers, IEvent.AudienceHeaderName);
+                if (audience.HasNoValue || audience.Value != _configuration.Name)
+                    continue;
+                
+                eventName = GetValue(consumeResult.Message.Headers, IEvent.EventTypeHeaderName);
+                if (eventName.HasNoValue)
                 {
-                    _logger.LogWarning("PERSON KAFKA CONSUMER ERROR: A message equals null, topic - {0}, message type - {1}", 
-                        _topic, typeof(TEvent).ToString());
+                    Log.Warning("KAFKA CONSUMER({0}): A message equals null, topic - {1}", 
+                        _consumer.MemberId, _configuration.Topic);
                     continue;
                 }
-                
-                var handler = _serviceProvider.GetService<IEventHandler<TEvent>>();
-                if (handler == null)
-                    throw new Exception($"Event handler for {typeof(TEvent)} wasn't registered");
 
-                await handler.Handle(appEvent);
+                var appEvent = consumeResult.Message.Value;
+                Log.Information("KAFKA CONSUMER({0}): A consumer for the topic {1} have received a message: {2}, event - {3}",
+                    _consumer.MemberId, _configuration.Topic, appEvent, eventName.Value);
+                if (appEvent == null)
+                {
+                    Log.Warning("KAFKA CONSUMER({0}): A message equals null, topic - {1}, event - {2}", 
+                        _consumer.MemberId, _configuration.Topic, eventName.Value);
+                    continue;
+                }
+
+                await using var scope = _serviceProvider.CreateAsyncScope();
+                var handler = scope.ServiceProvider.GetRequiredKeyedService<IKafkaEventHandler>(eventName.Value);
+                if (handler == null)
+                    throw new Exception($"Event handler for {eventName.Value} wasn't registered");
+
+                var shouldCommit = await handler.HandleRaw(appEvent);
+                if(shouldCommit)
+                    _consumer.Commit(consumeResult);
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "PERSON KAFKA CONSUMER ERROR: message can't be handled because of an exception, topic - {0}, message type - {1}, message - {2}", 
-                    _topic, typeof(TEvent).ToString(), consumeResult?.Message);
+                Log.Error(e, "KAFKA CONSUMER({0}): message can't be handled because of an exception, topic - {1}, event - {2}, message - {3}", 
+                    _consumer.MemberId, _configuration.Topic, eventName.GetValueOrDefault("null"), consumeResult?.Message.Value ?? "null");
             }
         }
 
+        Log.Information("KAFKA CONSUMER({0}): A consumer for the topic {1} is closing.", _consumer.MemberId, _configuration.Topic);
         _consumer.Close();
+    }
+
+    private Maybe<string> GetValue(Headers headers, string key)
+    {
+        var header = headers.FirstOrDefault(u => u.Key == key);
+        if(header == null)
+            return Maybe<string>.None;
+
+        var value = Encoding.UTF8.GetString(header.GetValueBytes());
+        return value;
     }
 }
