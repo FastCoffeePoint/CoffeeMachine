@@ -32,7 +32,7 @@ builder.Services.Configure<CoffeeMachineConfiguration>(builder.Configuration);
 builder.Services.Configure<KafkaOptions>(builder.Configuration.GetSection(KafkaOptions.Name));
 
 builder.Services.AddDbContext<DbCoffeeMachineContext>(u => 
-    u.UseInMemoryDatabase(DbCoffeeMachineContext.DatabaseName));
+    u.UseInMemoryDatabase(DbCoffeeMachineContext.DatabaseName), ServiceLifetime.Singleton);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
