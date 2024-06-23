@@ -42,6 +42,7 @@ public class OrderExecutionProcess(IOptionsMonitor<CoffeeMachineConfiguration> _
         await PushCoffeeIsReadyToBeGottenEvent(form, ingredientsBeforeExecution.Value, ingredientsAfterExecution.Value);
 
         var isCoffeeTaken = await WaitUntilCoffeeWillBeTaken(5); //TODO: move 5 to config
+        await _kafkaProducer.Push(new OrderHasBeenCompletedEvent(form.OrderId));
         //TODO: if a coffee wasn't taken probably alert? Or infinite waiting?
         
         return (Result.Success(), true);
